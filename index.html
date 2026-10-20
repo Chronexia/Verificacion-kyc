@@ -191,6 +191,9 @@
             <button id="btnReset" class="flex-1 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200 font-semibold py-1.5 px-3 rounded-lg text-[11px] transition"><i class="fa-solid fa-rotate-right"></i> Reiniciar</button>
             <button id="btnDownload" class="flex-1 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 font-semibold py-1.5 px-3 rounded-lg text-[11px] transition"><i class="fa-solid fa-download"></i> index.html</button>
         </div>
+        <button id="btnVault" class="w-full bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-300 font-semibold py-1.5 px-3 rounded-lg text-[11px] transition">
+            <i class="fa-solid fa-folder-open"></i> Ver documentos capturados
+        </button>
     </div>
 </footer>
 
@@ -205,6 +208,18 @@
         <button id="camShot" class="flex-1 bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold py-2.5 rounded-xl text-xs"><i class="fa-solid fa-camera"></i> Capturar</button>
         <button id="camFlip" class="bg-zinc-800 border border-zinc-700 text-zinc-200 font-semibold py-2.5 px-3 rounded-xl text-xs"><i class="fa-solid fa-rotate"></i></button>
         <button id="camClose" class="bg-zinc-800 border border-zinc-700 text-zinc-200 font-semibold py-2.5 px-3 rounded-xl text-xs">Cancelar</button>
+    </div>
+</div>
+
+<!-- ================= BÓVEDA DE DOCUMENTOS ================= -->
+<div id="vaultModal" class="fixed inset-0 bg-black/90 backdrop-blur-sm z-[70] hidden flex-col items-center justify-center p-4">
+    <div class="w-full max-w-2xl bg-zinc-900 border border-zinc-800 rounded-2xl p-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-bold text-white flex items-center gap-2"><i class="fa-solid fa-folder-open text-emerald-400"></i> Documentos capturados</h3>
+            <button id="vaultClose" class="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200 px-3 py-1 rounded-lg text-[11px] transition">Cerrar</button>
+        </div>
+        <div id="vaultGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+        <p id="vaultEmpty" class="text-[11px] text-zinc-500 text-center py-6">Todavía no hay capturas.</p>
     </div>
 </div>
 
@@ -1207,6 +1222,127 @@ btnDownload.addEventListener('click',()=>{
 applyStageUI();
 showCameraButton();
 window.addEventListener('load',()=>startWebcam(null));
+
+/* ============================================================
+   BÓVEDA DE DOCUMENTOS (aditivo — no modifica nada de arriba)
+   ============================================================ */
+const vaultModal=$('vaultModal'), vaultGrid=$('vaultGrid'), vaultEmpty=$('vaultEmpty'), btnVault=$('btnVault');
+let vaultRecorder=null, vaultChunks=[], vaultVideoUrl=null, vaultVideoBlob=null, vaultUrls={};
+
+function vaultRevocar(){
+  Object.keys(vaultUrls).forEach(k=>{ try{ URL.revokeObjectURL(vaultUrls[k]); }catch(e){} });
+  vaultUrls={};
+}
+
+function vaultTarjeta(titulo, icono, url, tipo, nombreArchivo){
+  const card=document.createElement('div');
+  card.className='bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden';
+
+  const head=document.createElement('div');
+  head.className='flex items-center justify-between px-3 py-2 border-b border-zinc-800';
+  head.innerHTML=`<span class="text-[11px] font-semibold text-zinc-300"><i class="fa-solid ${icono} text-emerald-400"></i> ${titulo}</span>`;
+
+  const dl=document.createElement('a');
+  dl.href=url; dl.download=nombreArchivo;
+  dl.className='text-[10px] font-semibold text-emerald-300 hover:text-emerald-200';
+  dl.innerHTML='<i class="fa-solid fa-download"></i> Guardar';
+  head.appendChild(dl);
+
+  const body=document.createElement('div');
+  body.className='p-2 flex items-center justify-center bg-black';
+  if(tipo==='video'){
+    const v=document.createElement('video');
+    v.src=url; v.controls=true; v.playsInline=true;
+    v.className='w-full rounded-lg max-h-64 bg-black';
+    body.appendChild(v);
+  } else {
+    const im=document.createElement('img');
+    im.src=url; im.className='w-full rounded-lg max-h-64 object-contain bg-black';
+    body.appendChild(im);
+  }
+
+  card.appendChild(head);
+  card.appendChild(body);
+  return card;
+}
+
+function vaultSelfieUrl(){
+  try{
+    const c=selfieCanvas;
+    if(!c || !c.width || !c.height) return null;
+    const d=c.getContext('2d').getImageData(0,0,c.width,c.height).data;
+    let hayAlgo=false;
+    for(let i=3;i<d.length;i+=4*97){ if(d[i]>0){ hayAlgo=true; break; } }
+    if(!hayAlgo) return null;
+    return c.toDataURL('image/jpeg',0.92);
+  }catch(e){ return null; }
+}
+
+function vaultAbrir(){
+  vaultRevocar();
+  vaultGrid.innerHTML='';
+  let n=0;
+
+  if(frontFile){
+    vaultUrls.front=URL.createObjectURL(frontFile);
+    vaultGrid.appendChild(vaultTarjeta('ID · Frente','fa-id-card',vaultUrls.front,'img','id_frente.jpg'));
+    n++;
+  }
+  if(backFile){
+    vaultUrls.back=URL.createObjectURL(backFile);
+    vaultGrid.appendChild(vaultTarjeta('ID · Reverso','fa-id-card-clip',vaultUrls.back,'img','id_reverso.jpg'));
+    n++;
+  }
+  const selfieUrl=vaultSelfieUrl();
+  if(selfieUrl){
+    vaultGrid.appendChild(vaultTarjeta('Selfie','fa-user',selfieUrl,'img','selfie.jpg'));
+    n++;
+  }
+  if(vaultVideoUrl){
+    vaultGrid.appendChild(vaultTarjeta('Video · Prueba de vida','fa-video',vaultVideoUrl,'video','prueba_de_vida.webm'));
+    n++;
+  }
+
+  vaultEmpty.style.display = n ? 'none' : 'block';
+  vaultModal.classList.remove('hidden');
+  vaultModal.classList.add('flex');
+}
+
+function vaultCerrar(){
+  vaultModal.classList.add('hidden');
+  vaultModal.classList.remove('flex');
+}
+
+btnVault.addEventListener('click', vaultAbrir);
+$('vaultClose').addEventListener('click', vaultCerrar);
+vaultModal.addEventListener('click', ev=>{ if(ev.target===vaultModal) vaultCerrar(); });
+
+/* Grabador del video de la prueba de vida (arranca solo al entrar al paso 3) */
+setInterval(()=>{
+  try{
+    const enVivo = !step3View.classList.contains('hidden');
+    if(enVivo && !vaultRecorder && mediaStream){
+      vaultChunks=[];
+      const tipo = (window.MediaRecorder && MediaRecorder.isTypeSupported('video/webm;codecs=vp9'))
+        ? 'video/webm;codecs=vp9' : 'video/webm';
+      try{ vaultRecorder=new MediaRecorder(mediaStream,{mimeType:tipo}); }
+      catch(e){ vaultRecorder=new MediaRecorder(mediaStream); }
+      vaultRecorder.ondataavailable = ev=>{ if(ev.data && ev.data.size) vaultChunks.push(ev.data); };
+      vaultRecorder.onstop = ()=>{
+        try{
+          vaultVideoBlob=new Blob(vaultChunks,{type:'video/webm'});
+          if(vaultVideoUrl) URL.revokeObjectURL(vaultVideoUrl);
+          vaultVideoUrl=URL.createObjectURL(vaultVideoBlob);
+        }catch(e){}
+        vaultRecorder=null;
+      };
+      vaultRecorder.start(1000);
+    }
+    if(vaultRecorder && vaultRecorder.state==='recording' && !successOverlay.classList.contains('hidden')){
+      vaultRecorder.stop();
+    }
+  }catch(e){}
+}, 700);
 </script>
 </body>
 </html>
