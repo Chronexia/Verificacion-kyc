@@ -28,8 +28,8 @@
     @keyframes scan { 0%{top:0%} 100%{top:100%} }
     .watermark-overlay { position:absolute; inset:0; background-image: radial-gradient(rgba(255,255,255,.05) 1px, transparent 0); background-size:16px 16px; pointer-events:none; z-index:10; }
     .spin { animation: sp 1s linear infinite; } @keyframes sp { to { transform: rotate(360deg) } }
-    /* Cámara de documento: SIN espejo y sin recorte */
-    #camVideo { transform: scaleX(1); height: auto; object-fit: contain; background:#000; }
+    /* Cámara de captura: sin recorte */
+    #camVideo { height: auto; object-fit: contain; background:#000; }
 </style>
 </head>
 <body class="h-full text-zinc-100 flex flex-col justify-between p-3 md:p-5 bg-[#0a0a0d]">
@@ -60,53 +60,48 @@
         </div>
     </div>
 
-    <!-- PASO 1 -->
+    <!-- PASO 1 — WIZARD DE CAPTURA -->
     <div id="step1View" class="w-full max-w-md flex flex-col items-center">
-        <div class="text-center mb-4">
-            <h2 class="text-lg md:text-xl font-bold text-white mb-1">Verificación de Identidad</h2>
-            <p class="text-xs text-zinc-400">Captura en vivo el frente y luego el reverso. Se analiza barcode, MRZ, fechas y calidad de imagen.</p>
+        <div class="text-center mb-3">
+            <h2 id="capTitle" class="text-lg md:text-xl font-bold text-white mb-1">Frente del documento</h2>
+            <p id="capHint" class="text-xs text-zinc-400">Encuadrá el frente del ID y tocá el botón.</p>
         </div>
 
-        <div class="grid grid-cols-2 gap-3 w-full mb-3">
-            <!-- FRENTE (primero) -->
-            <div id="idFrontCard" class="border-2 border-dashed border-zinc-700 bg-zinc-900/60 rounded-2xl p-3 flex flex-col items-center justify-center min-h-[150px] text-center transition hover:border-amber-500/60 cursor-pointer relative overflow-hidden">
-                <input type="file" id="idFrontInput" accept="image/*" capture="environment" class="hidden" />
-                <div id="idFrontPlaceholder" class="flex flex-col items-center gap-2">
-                    <div class="w-12 h-12 rounded-full bg-amber-500/15 border border-amber-500/40 flex items-center justify-center">
-                        <i class="fa-solid fa-camera text-amber-400 text-lg"></i>
-                    </div>
-                    <span class="text-xs font-semibold text-zinc-200">Frente del ID</span>
-                    <span class="text-[10px] text-zinc-500">Toca para abrir la cámara</span>
-                </div>
-                <img id="idFrontPreview" class="absolute inset-0 w-full h-full object-cover hidden rounded-xl" alt="Frente ID" />
-                <div id="idFrontCheck" class="absolute top-2 right-2 bg-emerald-500 text-zinc-950 w-5 h-5 rounded-full flex items-center justify-center text-xs hidden z-20"><i class="fa-solid fa-check"></i></div>
-                <div id="idFrontRetake" class="hidden absolute bottom-1.5 left-1/2 -translate-x-1/2 bg-zinc-950/85 border border-zinc-700 text-zinc-200 text-[9px] font-semibold px-2 py-0.5 rounded-full z-20"><i class="fa-solid fa-rotate-right"></i> Retomar</div>
-            </div>
+        <div class="flex items-center gap-1.5 mb-3">
+            <span id="chipFront" class="text-[10px] font-semibold px-2.5 py-1 rounded-full border border-amber-500/40 bg-amber-500/10 text-amber-400">1. Frente</span>
+            <span id="chipBack" class="text-[10px] font-semibold px-2.5 py-1 rounded-full border border-zinc-700 bg-zinc-800/40 text-zinc-500">2. Reverso</span>
+            <span id="chipSelfie" class="text-[10px] font-semibold px-2.5 py-1 rounded-full border border-zinc-700 bg-zinc-800/40 text-zinc-500">3. Selfie</span>
+        </div>
 
-            <!-- REVERSO (después) -->
-            <div id="idBackCard" class="border-2 border-dashed border-zinc-700 bg-zinc-900/60 rounded-2xl p-3 flex flex-col items-center justify-center min-h-[150px] text-center transition hover:border-amber-500/60 cursor-pointer relative overflow-hidden">
-                <input type="file" id="idBackInput" accept="image/*" capture="environment" class="hidden" />
-                <div id="idBackPlaceholder" class="flex flex-col items-center gap-2">
-                    <div class="w-12 h-12 rounded-full bg-amber-500/15 border border-amber-500/40 flex items-center justify-center">
-                        <i class="fa-solid fa-camera text-amber-400 text-lg"></i>
-                    </div>
-                    <span class="text-xs font-semibold text-zinc-200">Reverso del ID</span>
-                    <span class="text-[10px] text-zinc-500">Toca para abrir la cámara</span>
-                </div>
-                <img id="idBackPreview" class="absolute inset-0 w-full h-full object-cover hidden rounded-xl" alt="Reverso ID" />
-                <div id="idBackCheck" class="absolute top-2 right-2 bg-emerald-500 text-zinc-950 w-5 h-5 rounded-full flex items-center justify-center text-xs hidden z-20"><i class="fa-solid fa-check"></i></div>
-                <div id="idBackRetake" class="hidden absolute bottom-1.5 left-1/2 -translate-x-1/2 bg-zinc-950/85 border border-zinc-700 text-zinc-200 text-[9px] font-semibold px-2 py-0.5 rounded-full z-20"><i class="fa-solid fa-rotate-right"></i> Retomar</div>
+        <!-- Preview + Aceptar / Reintentar -->
+        <div id="capPreviewWrap" class="w-full hidden">
+            <div class="relative w-full h-44 rounded-2xl overflow-hidden border-2 border-zinc-700 bg-zinc-900">
+                <img id="capPreview" class="w-full h-full object-cover" alt="Captura" />
+                <div class="absolute top-2 right-2 bg-emerald-500 text-zinc-950 w-6 h-6 rounded-full flex items-center justify-center text-xs"><i class="fa-solid fa-check"></i></div>
+            </div>
+            <div class="flex gap-2 mt-2">
+                <button id="btnAccept" class="flex-1 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold py-3 rounded-xl text-xs md:text-sm flex items-center justify-center gap-2 transition">
+                    <i class="fa-solid fa-check"></i> Aceptar
+                </button>
+                <button id="btnRetry" class="flex-1 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200 font-semibold py-3 rounded-xl text-xs md:text-sm flex items-center justify-center gap-2 transition">
+                    <i class="fa-solid fa-rotate-left"></i> Reintentar
+                </button>
             </div>
         </div>
 
-        <div id="docStatus" class="w-full text-[11px] text-zinc-400 mb-3 hidden">
+        <!-- ÚNICO BOTÓN DE CÁMARA -->
+        <button id="btnCamMain" class="w-full mt-3 bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold py-4 rounded-2xl text-sm flex items-center justify-center gap-2 transition shadow-lg shadow-amber-500/20">
+            <i class="fa-solid fa-camera text-lg"></i> <span id="btnCamLabel">Tomar foto del FRENTE</span>
+        </button>
+
+        <div id="docStatus" class="w-full text-[11px] text-zinc-400 mt-3 hidden">
             <div class="flex items-center gap-2 bg-zinc-900/80 border border-zinc-800 rounded-lg px-3 py-2">
                 <i id="docStatusIcon" class="fa-solid fa-circle-notch spin text-amber-400"></i>
                 <span id="docStatusText">Analizando documento...</span>
             </div>
         </div>
 
-        <div id="docReport" class="w-full mb-4 hidden">
+        <div id="docReport" class="w-full mt-3 hidden">
             <div class="flex items-center justify-between mb-2">
                 <span class="text-[11px] font-bold uppercase tracking-wider text-zinc-400"><i class="fa-solid fa-microscope text-amber-400"></i> Informe forense</span>
                 <span id="docScoreBadge" class="text-[10px] font-bold px-2 py-0.5 rounded-full border">--</span>
@@ -114,32 +109,11 @@
             <ul id="docChecks" class="space-y-1 max-h-56 overflow-y-auto pr-0.5"></ul>
         </div>
 
-        <button id="btnNextToStep2" disabled class="w-full bg-zinc-800 text-zinc-500 font-semibold py-3 rounded-xl text-xs md:text-sm flex items-center justify-center gap-2 transition cursor-not-allowed">
-            Continuar a Selfie <i class="fa-solid fa-arrow-right"></i>
+        <button id="btnReadyVideo" class="hidden w-full mt-3 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold py-3.5 rounded-xl text-xs md:text-sm flex items-center justify-center gap-2 transition shadow-lg shadow-emerald-500/20">
+            <i class="fa-solid fa-video"></i> Listo para video
         </button>
-    </div>
 
-    <!-- PASO 2 -->
-    <div id="step2View" class="w-full max-w-md flex flex-col items-center hidden">
-        <div class="text-center mb-3">
-            <h2 class="text-lg md:text-xl font-bold text-white mb-1">Fotografía Selfie</h2>
-            <p class="text-xs text-zinc-400">Centra tu rostro. Se comparará con la foto del documento.</p>
-        </div>
-        <div class="relative w-56 h-56 md:w-60 md:h-60 rounded-2xl overflow-hidden border-2 border-zinc-700 bg-zinc-900 mb-3 shadow-xl">
-            <video id="selfieWebcam" autoplay playsinline muted class="w-full h-full object-cover"></video>
-            <canvas id="selfieCanvas" class="hidden absolute inset-0 w-full h-full object-cover"></canvas>
-        </div>
-        <div class="flex gap-2 w-full">
-            <button id="btnTakeSelfie" class="flex-1 bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold py-3 rounded-xl text-xs md:text-sm flex items-center justify-center gap-2 transition shadow-lg shadow-amber-500/20">
-                <i class="fa-solid fa-camera"></i> Tomar Selfie
-            </button>
-            <button id="btnRetakeSelfie" class="hidden flex-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-semibold py-3 rounded-xl text-xs md:text-sm flex items-center justify-center gap-2 transition">
-                <i class="fa-solid fa-rotate-left"></i> Repetir
-            </button>
-        </div>
-        <button id="btnNextToStep3" disabled class="w-full mt-3 bg-zinc-800 text-zinc-500 font-semibold py-3 rounded-xl text-xs md:text-sm flex items-center justify-center gap-2 transition cursor-not-allowed">
-            Continuar a Prueba de Vida <i class="fa-solid fa-arrow-right"></i>
-        </button>
+        <input type="file" id="fallbackInput" accept="image/*" capture="environment" class="hidden" />
     </div>
 
     <!-- PASO 3 -->
@@ -194,6 +168,8 @@
         </div>
         <p class="w-full text-[10px] text-zinc-500 mt-1.5 font-mono" id="matchResult">Face match: pendiente</p>
     </div>
+
+    <canvas id="selfieCanvas" class="hidden"></canvas>
 </main>
 
 <footer class="w-full max-w-xl mx-auto bg-zinc-900/90 border border-zinc-800 rounded-2xl p-3 shadow-xl">
@@ -218,15 +194,12 @@
     </div>
 </footer>
 
-<!-- ================= CÁMARA EN VIVO PARA EL DOCUMENTO ================= -->
+<!-- ================= CÁMARA DE CAPTURA ================= -->
 <div id="camModal" class="fixed inset-0 bg-black/90 backdrop-blur-sm z-[60] hidden flex-col items-center justify-center p-4">
-    <p id="camTitle" class="text-xs font-semibold text-zinc-200 mb-2"><i class="fa-solid fa-id-card text-amber-400"></i> Capturar documento</p>
+    <p id="camTitle" class="text-xs font-semibold text-zinc-200 mb-2"><i class="fa-solid fa-camera text-amber-400"></i> Capturar</p>
     <div class="relative w-full max-w-md rounded-2xl overflow-hidden border-2 border-zinc-700 bg-black">
         <video id="camVideo" autoplay playsinline muted></video>
-        <div class="absolute pointer-events-none border-2 border-amber-400/70 rounded-lg" style="left:50%; top:50%; transform:translate(-50%,-50%); width:44%; height:85%;"></div>
-        <div class="absolute inset-0 pointer-events-none flex items-end justify-center pb-2">
-            <span class="bg-zinc-950/80 border border-zinc-700 text-zinc-300 text-[9px] px-2 py-0.5 rounded-full">Encuadrá el documento completo</span>
-        </div>
+        <div id="camGuide" class="absolute pointer-events-none border-2 border-amber-400/70 rounded-lg" style="left:6%; right:6%; top:20%; bottom:20%;"></div>
     </div>
     <div class="flex gap-2 mt-3 w-full max-w-md">
         <button id="camShot" class="flex-1 bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold py-2.5 rounded-xl text-xs"><i class="fa-solid fa-camera"></i> Capturar</button>
@@ -271,13 +244,13 @@ function speakGuidance(text){
    CONFIGURACIÓN
    ============================================================ */
 const CFG = {
-  TURN_THRESHOLD: 0.10,       // asimetría mínima para considerar giro real
-  CENTER_THRESHOLD: 0.07,     // margen para considerar "centrado"
-  HOLD_MS: 350,               // tiempo que debe sostenerse la pose
-  EAR_BLINK: 0.17,            // umbral de cierre ocular
-  EAR_OPEN: 0.22,             // umbral de reapertura
-  MIN_FACE_RATIO: 0.16,       // ancho mínimo del rostro vs frame
-  FACE_MATCH_THRESHOLD: 0.55, // distancia euclidiana máxima
+  TURN_THRESHOLD: 0.10,
+  CENTER_THRESHOLD: 0.07,
+  HOLD_MS: 350,
+  EAR_BLINK: 0.17,
+  EAR_OPEN: 0.22,
+  MIN_FACE_RATIO: 0.16,
+  FACE_MATCH_THRESHOLD: 0.55,
   MIN_AGE: 18,
   TIMER_SECONDS: 60,
   MIN_W: 640, MIN_H: 400,
@@ -290,17 +263,15 @@ const $ = id => document.getElementById(id);
 /* ============================================================
    REFERENCIAS DOM
    ============================================================ */
-const step1View=$('step1View'), step2View=$('step2View'), step3View=$('step3View');
+const step1View=$('step1View'), step3View=$('step3View');
 const kycStep1Badge=$('kycStep1Badge'), kycStep2Badge=$('kycStep2Badge'), kycStep3Badge=$('kycStep3Badge'), kycProgressBar=$('kycProgressBar');
-const idFrontInput=$('idFrontInput'), idBackInput=$('idBackInput');
-const idFrontPreview=$('idFrontPreview'), idBackPreview=$('idBackPreview');
-const idFrontPlaceholder=$('idFrontPlaceholder'), idBackPlaceholder=$('idBackPlaceholder');
-const idFrontCheck=$('idFrontCheck'), idBackCheck=$('idBackCheck');
-const idFrontRetake=$('idFrontRetake'), idBackRetake=$('idBackRetake');
-const btnNextToStep2=$('btnNextToStep2');
+const capTitle=$('capTitle'), capHint=$('capHint'), capPreviewWrap=$('capPreviewWrap'), capPreview=$('capPreview');
+const btnAccept=$('btnAccept'), btnRetry=$('btnRetry'), btnCamMain=$('btnCamMain'), btnCamLabel=$('btnCamLabel'), btnReadyVideo=$('btnReadyVideo');
+const chipFront=$('chipFront'), chipBack=$('chipBack'), chipSelfie=$('chipSelfie');
+const fallbackInput=$('fallbackInput');
 const docStatus=$('docStatus'), docStatusIcon=$('docStatusIcon'), docStatusText=$('docStatusText');
 const docReport=$('docReport'), docChecks=$('docChecks'), docScoreBadge=$('docScoreBadge');
-const selfieWebcam=$('selfieWebcam'), selfieCanvas=$('selfieCanvas'), btnTakeSelfie=$('btnTakeSelfie'), btnRetakeSelfie=$('btnRetakeSelfie'), btnNextToStep3=$('btnNextToStep3');
+const selfieCanvas=$('selfieCanvas');
 const livenessWebcam=$('livenessWebcam'), faceOverlayCanvas=$('faceOverlayCanvas'), analysisCanvas=$('analysisCanvas');
 const instructionTitle=$('instructionTitle'), instructionSubtitle=$('instructionSubtitle'), instructionText=$('instructionText'), instructionIcon=$('instructionIcon');
 const timerText=$('timerText'), loadingOverlay=$('loadingOverlay'), loadingText=$('loadingText'), successOverlay=$('successOverlay'), successSub=$('successSub'), scanLine=$('scanLine');
@@ -316,7 +287,8 @@ let allChecks=[], docGateOk=false;
 let currentStepIndex=0, challenge=[];
 let holdStart=0, blinkArmed=false, smoothedAsym=0, wrongFrames=0;
 let faceLandmarker=null, lastVideoTime=-1, faceMatchDone=false;
-let camStream=null, camTarget='front', camFacing='environment';
+let camStream=null, camTarget='front', camFacing='environment', camMode='doc';
+let capStage='front', pendingFile=null, capPreviewUrl=null;
 
 /* ============================================================
    UTILIDADES
@@ -485,7 +457,6 @@ function analyzeImageQuality(img){
   }
   const lapMean=lsum/ln, sharpness=Math.max(0, lsq/ln-lapMean*lapMean);
 
-  // Heurística de re-captura de pantalla: energía de alta frecuencia + saturación de brillos
   let hf=0,hn=0;
   for(let y=1;y<H-1;y+=2) for(let x=1;x<W-1;x+=2){
     const p=y*W+x;
@@ -606,18 +577,15 @@ async function analyzeDocument(file, side){
   const img=await fileToImage(file);
   if(side==='front') frontImage=img;
 
-  // --- 1. Resolución ---
   const resOk = img.width>=CFG.MIN_W && img.height>=CFG.MIN_H;
   addCheck(list,'res','Resolución de captura', resOk?'pass':'warn',
     `${img.width}×${img.height}px ${resOk?'(suficiente)':'(baja, ideal ≥640×400)'}`, 1);
 
-  // --- 2. Relación de aspecto ID-1 ---
   const ratio=img.width/img.height;
   const ratioOk=Math.abs(ratio-CFG.ID_RATIO)<=CFG.RATIO_TOL;
   addCheck(list,'ratio','Relación de aspecto de tarjeta', ratioOk?'pass':'warn',
     `${ratio.toFixed(2)} : 1 ${ratioOk?'(coincide con ID-1 85.6×54mm)':'(esperado ≈1.59 — posible recorte o deformación)'}`, 1);
 
-  // --- 3. Calidad / forense ---
   const q=analyzeImageQuality(img);
   const brightOk = q.mean>=45 && q.mean<=215;
   addCheck(list,'bright','Exposición', brightOk?'pass':'fail',
@@ -640,7 +608,6 @@ async function analyzeDocument(file, side){
     screenProb<0.35?'pass':screenProb<0.55?'warn':'fail',
     `Probabilidad ${(screenProb*100).toFixed(0)}% ${screenProb<0.35?'(parece documento físico)':'(posible foto de pantalla)'}`, 1);
 
-  // --- 4. Código de barras ---
   const bc=await decodeBarcode(img);
   let bcFields=null, bcVersion=null;
   if(bc){
@@ -657,7 +624,6 @@ async function analyzeDocument(file, side){
     addCheck(list,'bc','Código de barras / QR','skip','No se detectó código en esta cara', 1);
   }
 
-  // --- 5. OCR + MRZ ---
   const ocrText = await runOCR(img);
   let mrzResult=null;
   if(ocrText){
@@ -676,7 +642,6 @@ async function analyzeDocument(file, side){
     addCheck(list,'ocr','OCR de texto','skip','Motor OCR no disponible', 1);
   }
 
-  // --- 6. Fechas ---
   const now=new Date();
   let birth=null, expiry=null, issue=null;
   if(bcFields){
@@ -706,7 +671,6 @@ async function analyzeDocument(file, side){
       orderOk?'Nacimiento < Emisión < Vencimiento':'Orden de fechas incoherente', 3);
   }
 
-  // --- 7. Cross-check barcode vs MRZ ---
   if(bcFields && mrzResult && mrzResult.fields.docNumber){
     const docBc=(bcFields.number||'').replace(/[^A-Z0-9]/gi,'').toUpperCase();
     const docMrz=(mrzResult.fields.docNumber||'').toUpperCase();
@@ -719,63 +683,117 @@ async function analyzeDocument(file, side){
 }
 
 /* ============================================================
-   FLUJO PASO 1 — SOLO CÁMARA EN VIVO
+   WIZARD DE CAPTURA (un solo botón de cámara)
    ============================================================ */
-async function ingestFile(file, side, preview, placeholder, check, retake){
-  const reader=new FileReader();
-  reader.onload=ev=>{ preview.src=ev.target.result; preview.classList.remove('hidden'); placeholder.classList.add('hidden'); };
-  reader.readAsDataURL(file);
-  if(side==='front') frontFile=file; else backFile=file;
-  check.classList.add('hidden');
-  retake.classList.remove('hidden');
+const STAGE_TEXT={
+  front:{ title:'Frente del documento', hint:'Encuadrá el frente del ID y tocá el botón.', label:'Tomar foto del FRENTE' },
+  back:{ title:'Reverso del documento', hint:'Ahora el reverso, donde está el código de barras.', label:'Tomar foto del REVERSO' },
+  selfie:{ title:'Selfie', hint:'Mirá de frente a la cámara y tocá el botón.', label:'Tomar SELFIE' },
+  done:{ title:'¡Capturas completas!', hint:'Frente, reverso y selfie listos.', label:'Tomar otra' }
+};
+
+function applyStageUI(){
+  const t=STAGE_TEXT[capStage] || STAGE_TEXT.front;
+  capTitle.textContent=t.title;
+  capHint.textContent=t.hint;
+  btnCamLabel.textContent=t.label;
+  setChips();
+}
+
+function setChips(){
+  const order=['front','back','selfie'];
+  const idx = capStage==='done' ? 3 : order.indexOf(capStage);
+  [[chipFront,'front'],[chipBack,'back'],[chipSelfie,'selfie']].forEach(([el,key])=>{
+    const i=order.indexOf(key);
+    if(i<idx) el.className='text-[10px] font-semibold px-2.5 py-1 rounded-full border border-emerald-500/40 bg-emerald-500/10 text-emerald-400';
+    else if(i===idx) el.className='text-[10px] font-semibold px-2.5 py-1 rounded-full border border-amber-500/40 bg-amber-500/10 text-amber-400';
+    else el.className='text-[10px] font-semibold px-2.5 py-1 rounded-full border border-zinc-700 bg-zinc-800/40 text-zinc-500';
+  });
+}
+
+function showCameraButton(){
+  if(capStage==='done'){ btnCamMain.classList.add('hidden'); btnReadyVideo.classList.remove('hidden'); }
+  else { btnCamMain.classList.remove('hidden'); btnReadyVideo.classList.add('hidden'); }
+}
+
+async function runAnalysis(file, side){
   docStatus.classList.remove('hidden');
   docStatusIcon.className='fa-solid fa-circle-notch spin text-amber-400';
   docStatusText.textContent=`Analizando cara ${side==='front'?'frontal':'trasera'}... (barcode · MRZ · forense)`;
-  btnNextToStep2.disabled=true;
-
   try{
     const res=await analyzeDocument(file, side);
     allChecks=allChecks.filter(c=>c.side!==side).concat(res.list.map(c=>({...c,side})));
     renderReport();
     docReport.classList.remove('hidden');
-    check.classList.remove('hidden');
     docStatusIcon.className='fa-solid fa-circle-check text-emerald-400';
-
-    if(frontFile&&backFile){
-      docStatusText.textContent='Análisis completado.';
-      const {score,docGateOk}=renderReport();
-      btnNextToStep2.disabled=!docGateOk;
-      if(docGateOk){
-        btnNextToStep2.className='w-full bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold py-3 rounded-xl text-xs md:text-sm flex items-center justify-center gap-2 transition cursor-pointer shadow-lg shadow-amber-500/20';
-        playSound('success');
-      } else {
-        btnNextToStep2.className='w-full bg-zinc-800 text-zinc-500 font-semibold py-3 rounded-xl text-xs md:text-sm flex items-center justify-center gap-2 transition cursor-not-allowed';
-        docStatusText.textContent=`Documento con observaciones críticas (score ${score}). Retomá la foto o continuá.`;
-      }
-    } else {
-      /* Falta una cara: abrimos la cámara para la que falta (primero frente, después reverso) */
-      const missing = !frontFile ? 'front' : 'back';
-      docStatusText.textContent = missing==='back' ? 'Frente capturado. Ahora el reverso...' : 'Falta el frente. Abriendo cámara...';
-      setTimeout(()=>{
-        if($('camModal').classList.contains('hidden')){
-          if(missing==='back' && !backFile) openCam('back');
-          if(missing==='front' && !frontFile) openCam('front');
-        }
-      }, 800);
-    }
+    docStatusText.textContent='Análisis listo. Aceptá o reintentá la foto.';
   }catch(err){
     docStatusIcon.className='fa-solid fa-triangle-exclamation text-red-400';
     docStatusText.textContent='Error analizando la imagen.';
   }
 }
-function bindUpload(input, preview, placeholder, check, retake, side){
-  input.addEventListener('change', e=>{ const f=e.target.files[0]; if(f) ingestFile(f, side, preview, placeholder, check, retake); });
+
+async function handleCaptured(file, stage){
+  pendingFile=file;
+  if(capPreviewUrl) URL.revokeObjectURL(capPreviewUrl);
+  capPreviewUrl=URL.createObjectURL(file);
+  capPreview.src=capPreviewUrl;
+  capPreviewWrap.classList.remove('hidden');
+  btnCamMain.classList.add('hidden');
+  btnReadyVideo.classList.add('hidden');
+  if(stage!=='selfie'){ await runAnalysis(file, stage); }
+  else { docStatus.classList.add('hidden'); }
 }
-bindUpload(idFrontInput,idFrontPreview,idFrontPlaceholder,idFrontCheck,idFrontRetake,'front');
-bindUpload(idBackInput,idBackPreview,idBackPlaceholder,idBackCheck,idBackRetake,'back');
+
+btnAccept.addEventListener('click', async ()=>{
+  if(!pendingFile) return;
+  const stage=capStage;
+  if(stage==='front'){
+    frontFile=pendingFile; pendingFile=null;
+    capStage='back'; applyStageUI();
+    capPreviewWrap.classList.add('hidden'); showCameraButton();
+    playSound('success');
+    openCam('back');                       /* automático al reverso */
+  } else if(stage==='back'){
+    backFile=pendingFile; pendingFile=null;
+    capStage='selfie'; applyStageUI();
+    capPreviewWrap.classList.add('hidden'); showCameraButton();
+    kycStep1Badge.className='flex items-center gap-1 text-emerald-500';
+    kycStep2Badge.className='flex items-center gap-1 text-amber-400';
+    kycProgressBar.style.width='66%';
+    playSound('success');
+  } else if(stage==='selfie'){
+    const img=await fileToImage(pendingFile);
+    selfieCanvas.width=img.width; selfieCanvas.height=img.height;
+    selfieCanvas.getContext('2d').drawImage(img,0,0);
+    pendingFile=null;
+    capStage='done'; applyStageUI();
+    capPreviewWrap.classList.add('hidden'); showCameraButton();
+    kycStep2Badge.className='flex items-center gap-1 text-emerald-500';
+    playSound('success');
+  }
+});
+
+btnRetry.addEventListener('click', ()=>{
+  pendingFile=null;
+  capPreviewWrap.classList.add('hidden');
+  showCameraButton();
+  openCam(capStage);
+});
+
+btnCamMain.addEventListener('click', ()=>{ if(capStage!=='done') openCam(capStage); });
+
+btnReadyVideo.addEventListener('click', ()=>{
+  step1View.classList.add('hidden'); step3View.classList.remove('hidden');
+  kycStep3Badge.className='flex items-center gap-1 text-amber-400';
+  kycProgressBar.style.width='100%';
+  startWebcam(livenessWebcam);
+  loadFaceModels();
+  initFaceLandmarker().then(()=>startLivenessCheck());
+});
 
 /* ============================================================
-   CÁMARA EN VIVO (única vía de captura del documento)
+   CÁMARA DE CAPTURA
    ============================================================ */
 async function startCam(){
   if(camStream){ camStream.getTracks().forEach(t=>t.stop()); camStream=null; }
@@ -788,18 +806,25 @@ async function startCam(){
   try{ await v.play(); }catch(e){}
 }
 
-async function openCam(side){
-  camTarget=side;
-  $('camTitle').innerHTML = side==='front'
-    ? '<i class="fa-solid fa-id-card text-amber-400"></i> Capturá el FRENTE del documento'
-    : '<i class="fa-solid fa-id-card-clip text-amber-400"></i> Capturá el REVERSO del documento';
+async function openCam(stage){
+  camTarget=stage;
+  camMode = stage==='selfie' ? 'selfie' : 'doc';
+  camFacing = camMode==='selfie' ? 'user' : 'environment';
+  $('camVideo').style.transform = camMode==='selfie' ? 'scaleX(-1)' : 'scaleX(1)';
+  $('camGuide').style.display = camMode==='selfie' ? 'none' : 'block';
+  $('camTitle').innerHTML = stage==='selfie'
+    ? '<i class="fa-solid fa-user text-amber-400"></i> Capturá tu SELFIE'
+    : (stage==='front'
+        ? '<i class="fa-solid fa-id-card text-amber-400"></i> Capturá el FRENTE del documento'
+        : '<i class="fa-solid fa-id-card-clip text-amber-400"></i> Capturá el REVERSO del documento');
   $('camModal').classList.remove('hidden');
   $('camModal').classList.add('flex');
-  try{
-    await startCam();
-  }catch(e){
+  try{ await startCam(); }
+  catch(e){
     closeCam();
-    (side==='front' ? idFrontInput : idBackInput).click();
+    fallbackInput.value='';
+    fallbackInput.onchange = ev=>{ const f=ev.target.files[0]; if(f) handleCaptured(f, capStage); };
+    fallbackInput.click();
   }
 }
 
@@ -815,37 +840,24 @@ $('camShot').addEventListener('click',()=>{
   const c=document.createElement('canvas');
   c.width=v.videoWidth; c.height=v.videoHeight;
   c.getContext('2d').drawImage(v,0,0);
-  const side=camTarget;
+  const stage=camTarget;
   c.toBlob(blob=>{
-    const file=new File([blob],`id_${side}_${Date.now()}.jpg`,{type:'image/jpeg'});
+    const file=new File([blob],`cap_${stage}_${Date.now()}.jpg`,{type:'image/jpeg'});
     closeCam();
     playSound('beep');
-    if(side==='front') ingestFile(file,'front',idFrontPreview,idFrontPlaceholder,idFrontCheck,idFrontRetake);
-    else ingestFile(file,'back',idBackPreview,idBackPlaceholder,idBackCheck,idBackRetake);
+    handleCaptured(file, stage);
   },'image/jpeg',0.95);
 });
 
 $('camFlip').addEventListener('click',async()=>{
   camFacing = camFacing==='environment' ? 'user' : 'environment';
+  $('camVideo').style.transform = camFacing==='user' ? 'scaleX(-1)' : 'scaleX(1)';
   try{ await startCam(); }catch(e){}
 });
 $('camClose').addEventListener('click',closeCam);
 
-$('idFrontCard').addEventListener('click',()=>openCam('front'));
-$('idBackCard').addEventListener('click',()=>openCam('back'));
-
-btnNextToStep2.addEventListener('click',()=>{
-  step1View.classList.add('hidden'); step2View.classList.remove('hidden');
-  kycStep1Badge.className='flex items-center gap-1 text-emerald-500';
-  kycStep2Badge.className='flex items-center gap-1 text-amber-400';
-  kycProgressBar.style.width='66%';
-  startWebcam(selfieWebcam);
-  loadFaceModels();
-  playSound('beep');
-});
-
 /* ============================================================
-   CÁMARA (selfie / liveness)
+   CÁMARA (liveness)
    ============================================================ */
 async function startWebcam(videoEl){
   try{
@@ -858,36 +870,6 @@ async function startWebcam(videoEl){
     $('cameraStatusText').innerText='Modo demo (sin cámara)';
   }
 }
-
-/* ============================================================
-   FLUJO PASO 2
-   ============================================================ */
-btnTakeSelfie.addEventListener('click',()=>{
-  const ctx=selfieCanvas.getContext('2d');
-  selfieCanvas.width=selfieWebcam.videoWidth||320;
-  selfieCanvas.height=selfieWebcam.videoHeight||320;
-  ctx.drawImage(selfieWebcam,0,0,selfieCanvas.width,selfieCanvas.height);
-  selfieWebcam.classList.add('hidden'); selfieCanvas.classList.remove('hidden');
-  btnTakeSelfie.classList.add('hidden'); btnRetakeSelfie.classList.remove('hidden');
-  btnNextToStep3.disabled=false;
-  btnNextToStep3.className='w-full mt-3 bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold py-3 rounded-xl text-xs md:text-sm flex items-center justify-center gap-2 transition cursor-pointer shadow-lg shadow-amber-500/20';
-  faceMatchDone=false;
-  playSound('success');
-});
-btnRetakeSelfie.addEventListener('click',()=>{
-  selfieCanvas.classList.add('hidden'); selfieWebcam.classList.remove('hidden');
-  btnTakeSelfie.classList.remove('hidden'); btnRetakeSelfie.classList.add('hidden');
-  btnNextToStep3.disabled=true;
-  btnNextToStep3.className='w-full mt-3 bg-zinc-800 text-zinc-500 font-semibold py-3 rounded-xl text-xs md:text-sm flex items-center justify-center gap-2 transition cursor-not-allowed';
-});
-btnNextToStep3.addEventListener('click',()=>{
-  step2View.classList.add('hidden'); step3View.classList.remove('hidden');
-  kycStep2Badge.className='flex items-center gap-1 text-emerald-500';
-  kycStep3Badge.className='flex items-center gap-1 text-amber-400';
-  kycProgressBar.style.width='100%';
-  startWebcam(livenessWebcam);
-  initFaceLandmarker().then(()=>startLivenessCheck());
-});
 
 /* ============================================================
    GENERADOR DE RETOS ALEATORIOS
@@ -1015,7 +997,6 @@ async function runFaceMatch(){
     if(!selfieDesc){ matchResult.textContent='Face match: no se detectó rostro en la selfie'; return 'Liveness OK (rostro no detectado)'; }
     if(!frontImage){ matchResult.textContent='Face match: sin imagen de documento'; return 'Liveness OK'; }
 
-    // Buscar rostro en el documento con varias escalas
     let docDesc=null;
     for(const size of [608,416,320]){
       const o=new faceapi.TinyFaceDetectorOptions({ inputSize:size, scoreThreshold:0.25 });
@@ -1098,7 +1079,6 @@ function landmarksToState(lm, vw, vh, overlayCtx){
   if(smoothedAsym>CFG.TURN_THRESHOLD) pose='right';
   else if(smoothedAsym<-CFG.TURN_THRESHOLD) pose='left';
 
-  // Overlay
   overlayCtx.strokeStyle=pose==='center'?'#22c55e':'#facc15';
   overlayCtx.lineWidth=2;
   overlayCtx.beginPath();
@@ -1159,7 +1139,6 @@ function evaluateFrame(state){
     return;
   }
 
-  // paso lateral
   if(state.pose===step.target){
     wrongFrames=0;
     if(!holdStart) holdStart=now;
@@ -1200,21 +1179,16 @@ btnFail.addEventListener('click',()=>{
 
 btnReset.addEventListener('click',()=>{
   stopVisionLoop(); clearInterval(countdownTimer); closeCam();
-  step3View.classList.add('hidden'); step2View.classList.add('hidden'); step1View.classList.remove('hidden');
+  step3View.classList.add('hidden'); step1View.classList.remove('hidden');
   kycStep1Badge.className='flex items-center gap-1 text-amber-400';
   kycStep2Badge.className='flex items-center gap-1 text-zinc-600';
   kycStep3Badge.className='flex items-center gap-1 text-zinc-600';
   kycProgressBar.style.width='33%';
-  idFrontInput.value=''; idBackInput.value='';
-  idFrontPreview.classList.add('hidden'); idBackPreview.classList.add('hidden');
-  idFrontPlaceholder.classList.remove('hidden'); idBackPlaceholder.classList.remove('hidden');
-  idFrontCheck.classList.add('hidden'); idBackCheck.classList.add('hidden');
-  idFrontRetake.classList.add('hidden'); idBackRetake.classList.add('hidden');
+  capStage='front'; pendingFile=null; applyStageUI();
+  capPreviewWrap.classList.add('hidden'); showCameraButton();
   docReport.classList.add('hidden'); docStatus.classList.add('hidden');
   allChecks=[]; frontFile=null; backFile=null; frontImage=null; docGateOk=false;
-  btnNextToStep2.disabled=true;
-  btnNextToStep2.className='w-full bg-zinc-800 text-zinc-500 font-semibold py-3 rounded-xl text-xs md:text-sm flex items-center justify-center gap-2 transition cursor-not-allowed';
-  btnRetakeSelfie.click();
+  selfieCanvas.getContext('2d').clearRect(0,0,selfieCanvas.width,selfieCanvas.height);
 });
 
 btnDownload.addEventListener('click',()=>{
@@ -1230,6 +1204,8 @@ btnDownload.addEventListener('click',()=>{
 /* ============================================================
    INIT
    ============================================================ */
+applyStageUI();
+showCameraButton();
 window.addEventListener('load',()=>startWebcam(null));
 </script>
 </body>
