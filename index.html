@@ -13,17 +13,17 @@
 <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 <style>
     body { font-family: 'Inter', sans-serif; user-select: none; background-color: #0a0a0d; }
-    .oval-container { position: relative; width: 270px; height: 360px; margin: 0 auto; }
-    .oval-frame-svg { position: absolute; top: -20px; left: -20px; width: 310px; height: 400px; z-index: 25; pointer-events: none; }
-    .segment-arc { fill: none; stroke-width: 10; stroke-linecap: round; transition: stroke .2s ease, filter .2s ease, opacity .2s ease; stroke: #27272a; }
-    .segment-yellow { stroke: #facc15 !important; filter: drop-shadow(0 0 14px rgba(250,204,21,.95)); animation: arcPulse .6s infinite alternate ease-in-out; }
+    .oval-container { position: relative; width: 190px; height: 250px; margin: 0 auto; }
+    .oval-frame-svg { position: absolute; top: -14px; left: -14px; width: 218px; height: 281px; z-index: 25; pointer-events: none; }
+    .segment-arc { fill: none; stroke-width: 12; stroke-linecap: round; transition: stroke .2s ease, filter .2s ease, opacity .2s ease; stroke: #27272a; }
+    .segment-yellow { stroke: #facc15 !important; filter: drop-shadow(0 0 14px rgba(250,204,21,.95)); }
     .segment-green { stroke: #22c55e !important; filter: drop-shadow(0 0 18px rgba(34,197,94,.95)); }
     .segment-red { stroke: #ef4444 !important; filter: drop-shadow(0 0 18px rgba(239,68,68,.95)); animation: shakeArc .3s infinite alternate ease-in-out; }
-    @keyframes arcPulse { 0% { opacity:.35; stroke-width:9 } 100% { opacity:1; stroke-width:12 } }
     @keyframes shakeArc { 0% { transform: translateX(-2px); opacity:.7 } 100% { transform: translateX(2px); opacity:1 } }
     .oval-mask { width:100%; height:100%; border-radius:50% / 50%; overflow:hidden; position:relative; background:#121217; box-shadow: inset 0 0 35px rgba(0,0,0,.95); }
     video { width:100%; height:100%; object-fit:cover; transform: scaleX(-1); }
-    canvas.overlay-canvas { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:12; transform: scaleX(-1); }
+    #livenessWebcam { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:center 28%; transform: scaleX(-1) scale(1.55); transform-origin:center 32%; }
+    canvas.overlay-canvas { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:12; transform: scaleX(-1) scale(1.55); transform-origin:center 32%; }
     .scan-line { position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg,transparent,#facc15,transparent); box-shadow:0 0 15px #facc15; opacity:.85; animation:scan 2s infinite linear; z-index:15; }
     @keyframes scan { 0%{top:0%} 100%{top:100%} }
     .watermark-overlay { position:absolute; inset:0; background-image: radial-gradient(rgba(255,255,255,.05) 1px, transparent 0); background-size:16px 16px; pointer-events:none; z-index:10; }
@@ -180,11 +180,10 @@
             </span>
             <span id="aiEngineLabel" class="text-[10px] bg-amber-500/10 border border-amber-500/30 text-amber-400 font-medium px-2 py-0.5 rounded-full">MediaPipe + ZXing</span>
         </div>
-        <div class="grid grid-cols-4 gap-2">
+        <div class="grid grid-cols-3 gap-2">
             <button id="btnSimulateCenter" class="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200 font-medium py-1.5 px-2 rounded-lg text-[11px] transition"><i class="fa-solid fa-user"></i> Centro</button>
             <button id="btnSimulateRight" class="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200 font-medium py-1.5 px-2 rounded-lg text-[11px] transition"><i class="fa-solid fa-arrow-right"></i> Derecha</button>
             <button id="btnSimulateLeft" class="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200 font-medium py-1.5 px-2 rounded-lg text-[11px] transition"><i class="fa-solid fa-arrow-left"></i> Izquierda</button>
-            <button id="btnSimulateBlink" class="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200 font-medium py-1.5 px-2 rounded-lg text-[11px] transition"><i class="fa-solid fa-eye"></i> Parpadeo</button>
         </div>
         <div class="flex gap-2">
             <button id="btnFail" class="flex-1 bg-red-950/60 hover:bg-red-900/80 border border-red-800/80 text-red-200 font-semibold py-1.5 px-3 rounded-lg text-[11px] transition"><i class="fa-solid fa-xmark"></i> Simular error</button>
@@ -898,7 +897,7 @@ const STEP_DEFS={
 
 function buildChallenge(){
   const pool=['right','left'];
-  pool.push(['right','left','blink'][Math.floor(Math.random()*3)]);
+  pool.push(['right','left'][Math.floor(Math.random()*2)]);
   for(let i=pool.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [pool[i],pool[j]]=[pool[j],pool[i]]; }
   const seq=[];
   seq.push({...STEP_DEFS.center, type:'center'});
@@ -1179,7 +1178,7 @@ function manualCheck(kind){
 btnSimulateCenter.addEventListener('click',()=>manualCheck('center'));
 btnSimulateRight.addEventListener('click',()=>manualCheck('right'));
 btnSimulateLeft.addEventListener('click',()=>manualCheck('left'));
-btnSimulateBlink.addEventListener('click',()=>manualCheck('blink'));
+if(btnSimulateBlink) btnSimulateBlink.addEventListener('click',()=>manualCheck('blink'));
 
 btnFail.addEventListener('click',()=>{
   if(isProcessingStep) return;
