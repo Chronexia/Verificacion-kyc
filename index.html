@@ -13,8 +13,8 @@
 <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 <style>
     body { font-family: 'Inter', sans-serif; user-select: none; background-color: #0a0a0d; }
-    .oval-container { position: relative; width: 270px; height: 360px; margin: 0 auto; }
-    .oval-frame-svg { position: absolute; top: -20px; left: -20px; width: 310px; height: 400px; z-index: 25; pointer-events: none; }
+    .oval-container { position: relative; width: 180px; height: 210px; margin: 0 auto; }
+    .oval-frame-svg { position: absolute; top: -30px; left: -30px; width: 240px; height: 270px; z-index: 25; pointer-events: none; }
     .segment-arc { fill: none; stroke-width: 10; stroke-linecap: round; transition: stroke .2s ease, filter .2s ease, opacity .2s ease; stroke: #27272a; }
     .segment-yellow { stroke: #facc15 !important; filter: drop-shadow(0 0 14px rgba(250,204,21,.95)); animation: arcPulse .6s infinite alternate ease-in-out; }
     .segment-green { stroke: #22c55e !important; filter: drop-shadow(0 0 18px rgba(34,197,94,.95)); }
@@ -23,7 +23,8 @@
     @keyframes shakeArc { 0% { transform: translateX(-2px); opacity:.7 } 100% { transform: translateX(2px); opacity:1 } }
     .oval-mask { width:100%; height:100%; border-radius:50% / 50%; overflow:hidden; position:relative; background:#121217; box-shadow: inset 0 0 35px rgba(0,0,0,.95); }
     video { width:100%; height:100%; object-fit:cover; transform: scaleX(-1); }
-    canvas.overlay-canvas { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:12; transform: scaleX(-1); }
+    #livenessWebcam { transform: scaleX(-1) scale(1.6); transform-origin: center center; }
+    canvas.overlay-canvas { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:12; transform: scaleX(-1) scale(1.6); transform-origin: center center; }
     .scan-line { position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg,transparent,#facc15,transparent); box-shadow:0 0 15px #facc15; opacity:.85; animation:scan 2s infinite linear; z-index:15; }
     @keyframes scan { 0%{top:0%} 100%{top:100%} }
     .watermark-overlay { position:absolute; inset:0; background-image: radial-gradient(rgba(255,255,255,.05) 1px, transparent 0); background-size:16px 16px; pointer-events:none; z-index:10; }
